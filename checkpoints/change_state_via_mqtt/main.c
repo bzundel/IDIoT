@@ -54,14 +54,17 @@ static Network network;
 static char device_name[MAX_LEN_DEVICE_NAME];
 char rcv_thread_stack[THREAD_STACKSIZE_MAIN];
 
-typedef struct {
+typedef struct MQTTPackage {
     char topic[MAX_LEN_TOPIC];
     char message[MAX_LEN_MESSAGE];
 } MQTTPackage;
 
-static void _create_mqttpackage(MQTTPackage* package, const char* topic, const char* message) {
+static MQTTPackage* _create_mqttpackage(const char* topic, const char* message) {
+    MQTTPackage* package = malloc(sizeof(MQTTPackage));
     strcpy(package->topic, topic);
     strcpy(package->message, message);
+
+    return package;
 }
 
 static void first_n_characters(char* dest, const char* src, int n) {
@@ -94,17 +97,26 @@ static int publish(char* topic, char* payload) {
 void* _thread_publish(void* args) {
     MQTTPackage* package = (MQTTPackage*)args;
 
+    puts("---Thread");
+    printf("%s\n", package->topic);
+    printf("%s\n", package->message);
+
     publish(package->topic, package->message);
+
+    free(package);
 
     return NULL;
 }
 
 // this might be superfluous
 void _publish_async(const char* topic, const char* message) {
-    MQTTPackage package;
-    _create_mqttpackage(&package, topic, message);
+    MQTTPackage* package = _create_mqttpackage(topic, message);
 
-    thread_create(rcv_thread_stack, sizeof(rcv_thread_stack), THREAD_PRIORITY_MAIN - 1, 0, _thread_publish, &package, "Message publish thread");
+    puts("Created package");
+    printf("%s\n", package->topic);
+    printf("%s\n", package->message);
+
+    thread_create(rcv_thread_stack, sizeof(rcv_thread_stack), THREAD_PRIORITY_MAIN - 1, 0, _thread_publish, package, "Message publish thread");
 }
 
 static void _message_received(MessageData *data) {
@@ -117,7 +129,8 @@ static void _message_received(MessageData *data) {
     printf("Message received: %s\n", message);
 
     if (strcmp("name/get", topic) == 0) {
-        _publish_async(topic, message);
+        printf("Device name: %s\n", device_name);
+        _publish_async("all", device_name);
     }
     else if (strcmp("name/set", topic) == 0) {
         strcpy(device_name, message);
@@ -132,7 +145,6 @@ static void _message_received(MessageData *data) {
 static int subscribe(char* topic) {
     enum QoS qos = QOS0;
 
-    printf("Subscribing to %s\n", topic);
     int ret = MQTTSubscribe(&client, topic, qos, _message_received);
     if (ret < 0) {
         printf("Unable to subscribe to %s. Code: %d\n", topic, ret);
@@ -140,6 +152,9 @@ static int subscribe(char* topic) {
     else {
         printf("Now subscribed to %s\n", topic);
     }
+
+    sleep(1);
+
     return ret;
 }
 
@@ -173,8 +188,9 @@ int main(void)
     device_name[MAX_LEN_DEVICE_NAME - 1] = '\0';
 
     printf("Device name initialized as %s\n", device_name);
-
     ret = NetworkConnect(&network, remote_ip, port);
+
+    sleep(1);
 
     printf("%d\n", ret);
 
@@ -183,17 +199,19 @@ int main(void)
         return ret;
     }
 
-    puts("Successfully connected to broker");
-
     ret = MQTTConnect(&client, &data);
     if (ret < 0) {
         puts("Unable to connect client");
         return ret;
     }
 
+    sleep(1);
+
     subscribe("all");
     subscribe("name/get");
     subscribe("name/set");
+
+    publish("all", "Something!");
 
     return 0;
 }
