@@ -47,7 +47,7 @@ static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
 #define IS_CLEAN_SESSION                1
 #define IS_RETAINED_MSG                 0
 
-#define REMOTE_IP "fe80::d965:926f:ff1f:6825"
+#define REMOTE_IP "2001:16b8:c588:3400:697e:7884:12ba:8d7a"
 
 static MQTTClient client;
 static Network network;
@@ -58,7 +58,7 @@ static void read_temperature(saul_reg_t* reg, char* value) {
     data.unit = UNIT_TEMP_C;
 
     saul_reg_read(reg, &data);
-    sprintf(value, "%.2f\n", ((int)data.val[0]) * pow(10, data.scale));
+    sprintf(value, "%.1f", ((int)data.val[0]) * pow(10, data.scale));
 }
 
 static int publish(char* topic, char* payload) {
@@ -121,14 +121,12 @@ int main(void)
 
     sleep(3); // required for dht sensor
 
-    saul_reg_t* reg = saul_reg_find_type(SAUL_SENSE_TEMP);
 
-    char buffer[20];
     while (1) {
+        saul_reg_t* reg = saul_reg_find_type(SAUL_SENSE_TEMP);
+        char buffer[20];
         read_temperature(reg, buffer);
-
-        publish("testing/temperature", buffer);
-
+        publish("all", buffer);
         sleep(3);
     }
 
