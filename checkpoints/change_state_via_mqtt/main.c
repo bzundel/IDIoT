@@ -47,8 +47,6 @@ static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
 #define IS_CLEAN_SESSION                1
 #define IS_RETAINED_MSG                 0
 
-#define REMOTE_IP "2001:16b8:c597:6700:ef6a:20f9:bf35:b874"
-
 static MQTTClient client;
 static Network network;
 static char device_name[MAX_LEN_DEVICE_NAME];
@@ -72,7 +70,7 @@ static void first_n_characters(char* dest, const char* src, int n) {
     dest[n] = '\0';
 }
 
-static int publish(char* topic, char* payload) {
+static int _publish(char* topic, char* payload) {
     enum QoS qos = QOS0;
 
     MQTTMessage message;
@@ -81,14 +79,12 @@ static int publish(char* topic, char* payload) {
     message.payload = payload;
     message.payloadlen = strlen(payload);
 
-    puts("Publishing...");
-
     int rc;
     if ((rc = MQTTPublish(&client, topic, &message)) < 0) {
-        puts("Unable to publish");
+        printf("DEBUG: Unable to publish \"%s\" to \"%s\"", topic, payload);
     }
     else {
-        printf("Successfully published \"%s\"\n", (char*)payload);
+        printf("DEBUG: Published \"%s\"\n", (char*)payload);
     }
 
     return rc;
@@ -97,11 +93,7 @@ static int publish(char* topic, char* payload) {
 void* _thread_publish(void* args) {
     MQTTPackage* package = (MQTTPackage*)args;
 
-    puts("---Thread");
-    printf("%s\n", package->topic);
-    printf("%s\n", package->message);
-
-    publish(package->topic, package->message);
+    _publish(package->topic, package->message);
 
     free(package);
 
@@ -111,10 +103,6 @@ void* _thread_publish(void* args) {
 // this might be superfluous
 void _publish_async(const char* topic, const char* message) {
     MQTTPackage* package = _create_mqttpackage(topic, message);
-
-    puts("Created package");
-    printf("%s\n", package->topic);
-    printf("%s\n", package->message);
 
     thread_create(rcv_thread_stack, sizeof(rcv_thread_stack), THREAD_PRIORITY_MAIN - 1, 0, _thread_publish, package, "Message publish thread");
 }
@@ -126,40 +114,32 @@ static void _message_received(MessageData *data) {
     first_n_characters(topic, data->topicName->lenstring.data, data->topicName->lenstring.len);
     first_n_characters(message, data->message->payload, data->message->payloadlen);
 
-    printf("Message received: %s\n", message);
+    printf("DEBUG: Received \"%s\"on \"%s\"\n", message, topic);
 
-    if (strcmp("name/get", topic) == 0) {
-        printf("Device name: %s\n", device_name);
+    if (strcmp("config/name/get", topic) == 0) {
         _publish_async("all", device_name);
     }
-    else if (strcmp("name/set", topic) == 0) {
+    else if (strcmp("config/name/set", topic) == 0) {
         strcpy(device_name, message);
     }
-
-    printf("Message received: %.*s: %.*s\n",
-           (int)data->topicName->lenstring.len,
-           data->topicName->lenstring.data, (int)data->message->payloadlen,
-           (char *)data->message->payload);
 }
 
-static int subscribe(char* topic) {
+static int _subscribe(char* topic) {
     enum QoS qos = QOS0;
 
     int ret = MQTTSubscribe(&client, topic, qos, _message_received);
     if (ret < 0) {
-        printf("Unable to subscribe to %s. Code: %d\n", topic, ret);
+        printf("DEBUG: Unable to subscribe to %s. Code: %d\n", topic, ret);
     }
     else {
-        printf("Now subscribed to %s\n", topic);
+        printf("DEBUG: Now subscribed to \"%s\"\n", topic);
     }
-
-    sleep(1);
 
     return ret;
 }
 
 
-static unsigned char buf[BUF_SIZE];
+static unsigned char buf[BUF_SIZE]; // FIXME these do what?
 static unsigned char readbuf[BUF_SIZE];
 
 int main(void)
@@ -173,9 +153,9 @@ int main(void)
     MQTTClientInit(&client, &network, COMMAND_TIMEOUT_MS, buf, BUF_SIZE, readbuf, BUF_SIZE);
     MQTTStartTask(&client);
 
+    // wait for assigned ipv6 address
     gnrc_netif_ipv6_wait_for_global_address(NULL, 2 * MS_PER_SEC);
 
-    int ret = -1;
     char* remote_ip = REMOTE_IP;
     int port = DEFAULT_MQTT_PORT;
     MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
@@ -183,35 +163,27 @@ int main(void)
     data.cleansession = IS_CLEAN_SESSION;
     data.willFlag = 0;
 
-    // initial identifier declaration
+    // initial device_name initialization
     strncpy(device_name, DEVICE_NAME, MAX_LEN_DEVICE_NAME - 1);
     device_name[MAX_LEN_DEVICE_NAME - 1] = '\0';
 
-    printf("Device name initialized as %s\n", device_name);
+    int ret = -1;
     ret = NetworkConnect(&network, remote_ip, port);
 
-    sleep(1);
-
-    printf("%d\n", ret);
-
     if (ret < 0) {
-        puts("Unable to connect to broker");
+        puts("DEBUG: Unable to connect to broker");
         return ret;
     }
 
     ret = MQTTConnect(&client, &data);
     if (ret < 0) {
-        puts("Unable to connect client");
+        puts("DEBUG: Unable to connect client");
         return ret;
     }
 
-    sleep(1);
-
-    subscribe("all");
-    subscribe("name/get");
-    subscribe("name/set");
-
-    publish("all", "Something!");
+    _subscribe("all");
+    _subscribe("config/name/get"); // FIXME subscibe only to device's config topics
+    _subscribe("config/name/set");
 
     return 0;
 }

@@ -33,9 +33,12 @@ USEMODULE += ztimer
 USEMODULE += ztimer_msec
 
 include Makefile.WIFI.include
+include Makefile.MQTT.include
 include $(RIOTBASE)/Makefile.include
 
 ifneq (,$(filter arch_esp,$(FEATURES_USED)))
   CFLAGS += -DWIFI_SSID=\"$(WIFI_SSID)\"
   CFLAGS += -DWIFI_PASS=\"$(WIFI_PASS)\"
 endif
+
+CFLAGS += -DREMOTE_IP=\"$(REMOTE_IP)\"

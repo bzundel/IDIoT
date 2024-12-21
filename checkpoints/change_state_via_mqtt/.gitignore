@@ -1,3 +1,4 @@
 Makefile.WIFI.include
+Makefile.MQTT.include
 
 bin/
