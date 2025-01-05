@@ -65,6 +65,33 @@ static MQTTPackage* _create_mqttpackage(const char* topic, const char* message) 
     return package;
 }
 
+static int _subscribe(char* topic) {
+    enum QoS qos = QOS0;
+
+    int ret = MQTTSubscribe(&client, topic, qos, _message_received);
+    if (ret < 0) {
+        printf("DEBUG: Unable to subscribe to %s. Code: %d\n", topic, ret);
+    }
+    else {
+        printf("DEBUG: Now subscribed to \"%s\"\n", topic);
+    }
+
+    return ret;
+}
+
+static int _unsubscribe(char* topic) {
+    int ret = MQTTUnsubscribe(&client, topic);
+
+    return ret;
+}
+
+static char* _get_device_config_topic(char* subtopic) {
+    char* ret = malloc(sizeof(char) * MAX_LEN_TOPIC);
+    sprintf(ret, "%s/config/%s", device_name, subtopic);
+
+    return ret;
+}
+
 static void first_n_characters(char* dest, const char* src, int n) {
     strncpy(dest, src, n);
     dest[n] = '\0';
@@ -120,23 +147,20 @@ static void _message_received(MessageData *data) {
         _publish_async("all", device_name);
     }
     else if (strcmp("config/name/set", topic) == 0) {
+        char* device_config_topic;
+        device_config_topic = _get_device_config_topic("name/get");
+        _unsubscribe(device_config_topic);
+
         strcpy(device_name, message);
+
+        device_config_topic = _get_device_config_topic("name/set");
+        _subscribe(device_config_topic);
+
+        free(device_config_topic);
+
     }
 }
 
-static int _subscribe(char* topic) {
-    enum QoS qos = QOS0;
-
-    int ret = MQTTSubscribe(&client, topic, qos, _message_received);
-    if (ret < 0) {
-        printf("DEBUG: Unable to subscribe to %s. Code: %d\n", topic, ret);
-    }
-    else {
-        printf("DEBUG: Now subscribed to \"%s\"\n", topic);
-    }
-
-    return ret;
-}
 
 
 static unsigned char buf[BUF_SIZE]; // FIXME these do what?
@@ -182,8 +206,15 @@ int main(void)
     }
 
     _subscribe("all");
-    _subscribe("config/name/get"); // FIXME subscibe only to device's config topics
-    _subscribe("config/name/set");
+
+    char* config_name;
+
+    config_name = _get_device_config_topic("name/get");
+    _subscribe(config_name);
+    config_name = _get_device_config_topic("name/set");
+    _subscribe(config_name);
+
+    free(config_name);
 
     return 0;
 }
