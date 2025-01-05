@@ -1,0 +1,13 @@
+[node.livingroom]
+  [[node.livingroom.sensors]]
+    type = "sensor_type.temperature"
+    interval = "3s"
+
+[node.bathroom]
+  [[node.bathroom.sensors]]
+    type = "sensor_type.temperature"
+    interval = "5s"
+
+  [[node.bathroom.sensors]]
+    type = "sensor_type.humidity"
+    interval = "5m"
