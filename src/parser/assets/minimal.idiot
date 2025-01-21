@@ -1,0 +1,21 @@
+node livingroom = {
+	sensors = [
+		{
+			type = "temperature"
+			interval = "3s"
+		}
+	]
+}
+
+node bathroom = {
+	sensors = [
+		{
+			type = "temperature"
+			interval = "5m"
+		},
+		{
+			type = "humidity"
+			interval = "10m"
+		}
+	]
+}

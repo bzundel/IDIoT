@@ -1,0 +1,3 @@
+%{
+  "nimble_parsec": {:hex, :nimble_parsec, "1.4.1", "f41275a0354c736db4b1d255b5d2a27c91028e55c21ea3145b938e22649ffa3f", [:mix], [], "hexpm", "605e44204998f138d6e13be366c8e81af860e726c8177caf50067e1b618fe522"},
+}
