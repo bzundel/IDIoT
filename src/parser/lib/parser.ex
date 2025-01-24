@@ -6,10 +6,16 @@ defmodule Parser do
   identifier = ascii_string([?a..?z, ?A..?Z, ?_], min: 1)
   quoted_string = ignore(string("\"")) |> ascii_string([not: ?"], min: 0) |> ignore(string("\""))
   equals = ignore(whitespace) |> string("=") |> ignore(whitespace)
-  #field = fn (name) -> ignore(string(name)) |> ignore(equals) |> concat(quoted_string) |> ignore(whitespace) end
+  field = fn (name) ->
+    ignore(string(name))
+    |> ignore(equals)
+    |> concat(quoted_string)
+    |> ignore(whitespace)
+    |> unwrap_and_tag(String.to_atom(name))
+  end
 
-  def reduce_project([name, wifi, nodes]) do
-    %{name: name, wifi: wifi, nodes: nodes}
+  def reduce_project([{:name, name}, {:riot_path, riot_path}, wifi, nodes]) do
+    {%{name: name, riot_path: riot_path, wifi: wifi}, nodes}
   end
 
   def reduce_wifi([ssid, password]) do
@@ -83,10 +89,8 @@ defmodule Parser do
     |> reduce({:reduce_wifi, []})
 
   project =
-    ignore(string("name"))
-    |> ignore(equals)
-    |> concat(quoted_string)
-    |> ignore(whitespace)
+    field.("name")
+    |> concat(field.("riot_path"))
     |> concat(wifi)
     |> concat(nodes)
     |> reduce({:reduce_project, []})

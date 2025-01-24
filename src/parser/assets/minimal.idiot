@@ -1,5 +1,7 @@
 name = "demo"
 
+riot_path = "/home/bened/RIOT"
+
 wifi_ssid = "abc"
 wifi_password = "456"
 
