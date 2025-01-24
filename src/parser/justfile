@@ -1,0 +1,5 @@
+test:
+	mix parse assets/minimal.idiot
+
+clean:
+	rm -r out
