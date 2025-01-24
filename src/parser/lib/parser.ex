@@ -6,9 +6,22 @@ defmodule Parser do
   identifier = ascii_string([?a..?z, ?A..?Z, ?_], min: 1)
   quoted_string = ignore(string("\"")) |> ascii_string([not: ?"], min: 0) |> ignore(string("\""))
   equals = ignore(whitespace) |> string("=") |> ignore(whitespace)
+  #field = fn (name) -> ignore(string(name)) |> ignore(equals) |> concat(quoted_string) |> ignore(whitespace) end
+
+  def reduce_project([name, wifi, nodes]) do
+    %{name: name, wifi: wifi, nodes: nodes}
+  end
+
+  def reduce_wifi([ssid, password]) do
+    %{ssid: ssid, password: password}
+  end
 
   def reduce_node([name, sensors]) do
     %{name: name, sensors: sensors}
+  end
+
+  def reduce_nodes(nodes) do
+    nodes
   end
 
   def reduce_sensor([type, interval]) do
@@ -54,5 +67,29 @@ defmodule Parser do
     |> ignore(string("}"))
     |> reduce({:reduce_node, []})
 
-  defparsec(:parse, repeat(node |> ignore(optional(whitespace))))
+  nodes =
+    repeat(node |> ignore(optional(whitespace)))
+    |> reduce({:reduce_nodes, []})
+
+  wifi =
+    ignore(string("wifi_ssid"))
+    |> ignore(equals)
+    |> concat(quoted_string)
+    |> ignore(whitespace)
+    |> ignore(string("wifi_password"))
+    |> ignore(equals)
+    |> concat(quoted_string)
+    |> ignore(whitespace)
+    |> reduce({:reduce_wifi, []})
+
+  project =
+    ignore(string("name"))
+    |> ignore(equals)
+    |> concat(quoted_string)
+    |> ignore(whitespace)
+    |> concat(wifi)
+    |> concat(nodes)
+    |> reduce({:reduce_project, []})
+
+  defparsec(:parse, project)
 end
