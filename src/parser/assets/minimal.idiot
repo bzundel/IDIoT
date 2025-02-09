@@ -3,7 +3,9 @@ name = "demo"
 riot_path = "/home/bened/RIOT"
 
 wifi_ssid = "abc"
-wifi_password = "456"
+wifi_password = "123"
+
+mosquitto_broker_address = "2001:16b8:c5b5:b300:f45a:3b84:5626:a545"
 
 node livingroom = {
 	sensors = [

@@ -46,6 +46,13 @@ defmodule Main do
       },
       false
     )
+
+    generate_file_from_map(
+      Path.join(RiotConversions.get_path(:snippets), RiotConversions.get_snippet_file(:main)),
+      Path.join(node_outpath, RiotConversions.get_file(:main)),
+      %{},
+      false
+    )
   end
 
   defp generate({meta, nodes}) do
@@ -62,7 +69,15 @@ defmodule Main do
       Path.join(RiotConversions.get_path(:snippets), RiotConversions.get_snippet_file(:makefile_wifi)),
       Path.join(outpath, RiotConversions.get_file(:makefile_wifi)),
       meta.wifi,
-      true)
+      true
+    )
+
+    generate_file_from_map(
+      Path.join(RiotConversions.get_path(:snippets), RiotConversions.get_snippet_file(:makefile_mosquitto)),
+      Path.join(outpath, RiotConversions.get_file(:makefile_mosquitto)),
+      %{address: meta.mosquitto_broker_address},
+      true
+    )
 
     for node <- nodes do
       generate_files_from_node(meta, node, outpath)

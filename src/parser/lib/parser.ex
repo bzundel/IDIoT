@@ -14,8 +14,8 @@ defmodule Parser do
     |> unwrap_and_tag(String.to_atom(name))
   end
 
-  def reduce_project([{:name, name}, {:riot_path, riot_path}, wifi, nodes]) do
-    {%{name: name, riot_path: riot_path, wifi: wifi}, nodes}
+  def reduce_project([{:name, name}, {:riot_path, riot_path}, wifi, {:mosquitto_broker_address, address}, nodes]) do
+    {%{name: name, riot_path: riot_path, wifi: wifi, mosquitto_broker_address: address}, nodes}
   end
 
   def reduce_wifi([ssid, password]) do
@@ -92,6 +92,7 @@ defmodule Parser do
     field.("name")
     |> concat(field.("riot_path"))
     |> concat(wifi)
+    |> concat(field.("mosquitto_broker_address"))
     |> concat(nodes)
     |> reduce({:reduce_project, []})
 

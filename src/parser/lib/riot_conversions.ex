@@ -2,7 +2,9 @@ defmodule RiotConversions do
   defp files do
     %{
       :makefile => "Makefile",
-      :makefile_wifi => "Makefile.WIFI.include"
+      :makefile_wifi => "Makefile.WIFI.include",
+      :makefile_mosquitto => "Makefile.MOSQUITTO.include",
+      :main => "main.c"
     }
   end
 
