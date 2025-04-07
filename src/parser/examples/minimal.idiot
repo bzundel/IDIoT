@@ -1,0 +1,30 @@
+name = "demo"
+
+riot_path = "/home/bened/RIOT"
+
+wifi_ssid = $WIFI_SSID
+wifi_password = $WIFI_PASSWORD
+
+mosquitto_broker_address = "fdf3:935c:bcf5:0:788d:14ff:4c84:94c3"
+
+node livingroom = {
+	sensors = [
+		{
+			type = "temperature"
+			interval = "3s"
+		}
+	]
+}
+
+node bathroom = {
+	sensors = [
+		{
+			type = "temperature"
+			interval = "5m"
+		},
+		{
+			type = "humidity"
+			interval = "10m"
+		}
+	]
+}

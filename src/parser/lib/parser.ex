@@ -6,7 +6,7 @@ defmodule Parser do
   identifier = ascii_string([?a..?z, ?A..?Z, ?_], min: 1)
   quoted_string = ignore(string("\"")) |> ascii_string([not: ?"], min: 0) |> ignore(string("\""))
   equals = ignore(whitespace) |> string("=") |> ignore(whitespace)
-  field = fn (name) ->
+  field = fn (name) -> # TODO use fields in parsing
     ignore(string(name))
     |> ignore(equals)
     |> concat(quoted_string)
@@ -37,6 +37,15 @@ defmodule Parser do
   def reduce_sensor_list(sensors) do
     sensors
   end
+
+  def reduce_environment_variable([name]) do
+    System.get_env(name)
+  end
+
+  environment_variable =
+    ignore(string("$"))
+    |> concat(ascii_string([?a..?z, ?A..?Z, ?0..?9, ?_], min: 1))
+    |> reduce({:reduce_environment_variable, []})
 
   sensor =
     ignore(string("{"))
@@ -80,11 +89,11 @@ defmodule Parser do
   wifi =
     ignore(string("wifi_ssid"))
     |> ignore(equals)
-    |> concat(quoted_string)
+    |> concat(choice([quoted_string, environment_variable])) # FIXME use fields
     |> ignore(whitespace)
     |> ignore(string("wifi_password"))
     |> ignore(equals)
-    |> concat(quoted_string)
+    |> concat(choice([quoted_string, environment_variable]))
     |> ignore(whitespace)
     |> reduce({:reduce_wifi, []})
 
