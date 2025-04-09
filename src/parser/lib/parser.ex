@@ -1,5 +1,6 @@
 defmodule Parser do
   import NimbleParsec
+  require Logger
 
   whitespace = ascii_char([?\s, ?\n, ?\r, ?\t]) |> repeat()
   whitespace_force = ascii_char([?\s, ?\n, ?\r, ?\t]) |> times(min: 1)
@@ -39,7 +40,14 @@ defmodule Parser do
   end
 
   def reduce_environment_variable([name]) do
-    System.get_env(name)
+    case System.get_env(name) do
+      nil ->
+        Logger.error("Environment variable #{name} not set")
+        exit(:failure)
+      value ->
+        value
+    end
+
   end
 
   environment_variable =
