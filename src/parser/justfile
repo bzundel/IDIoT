@@ -2,4 +2,4 @@ test:
 	mix parse examples/minimal.idiot
 
 clean:
-	rm -r out
+	rm -rf out
