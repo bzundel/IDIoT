@@ -50,6 +50,13 @@ static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
 static MQTTClient client;
 static Network network;
 
+static void read_temperature(saul_reg_t* reg, char* value) {
+    phydat_t data;
+    data.unit = UNIT_TEMP_C;
+    saul_reg_read(reg, &data);
+    sprintf(value, "%.1f", ((int)data.val[0]) * pow(10, data.scale));
+}
+
 static int publish(char* topic, char* payload) {
     enum QoS qos = QOS0;
 
@@ -108,19 +115,21 @@ int main(void)
         return ret;
     }
 
-    sleep(1);
+    saul_reg_t* reg = saul_reg_find_type(SAUL_SENSE_TEMP);
+    if (reg == NULL) {
+        puts("No temperature sensor found");
+        return -1;
+    }
 
-    //sleep(3); // required for dht sensor
+    puts("Waiting 5 seconds for sensor stabilization...");
+    sleep(5);
 
-    //while (1) {
-    //    saul_reg_t* reg = saul_reg_find_type(SAUL_SENSE_TEMP);
-    //    char buffer[20];
-    //    read_temperature(reg, buffer);
-    //    publish("all", buffer);
-    //    sleep(3);
-    //}
-
-    publish("test", "Hello!");
+    while (1) {
+        char buffer[20];
+        read_temperature(reg, buffer);
+        publish("test", buffer);
+        sleep(3);
+    }
 
     return 0;
 }
