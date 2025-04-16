@@ -37,6 +37,8 @@ include ../Makefile.WIFI.include
 include ../Makefile.MOSQUITTO.include
 include $(RIOTBASE)/Makefile.include
 
+CFLAGS += -DDHT_PARAM_PIN=21
+
 ifneq (,$(filter arch_esp,$(FEATURES_USED)))
   CFLAGS += -DWIFI_SSID=\"$(WIFI_SSID)\"
   CFLAGS += -DWIFI_PASS=\"$(WIFI_PASS)\"
